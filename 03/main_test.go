@@ -52,7 +52,7 @@ func TestOzon04(t *testing.T) {
 	}
 }
 
-func BenchmarkOzon03(b *testing.B) {
+func BenchmarkOzon03_b(b *testing.B) {
 
 	var inTestData fs.File
 	zipRC, _ := zip.OpenReader("even-strings.zip")

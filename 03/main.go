@@ -12,56 +12,55 @@ var (
 	out = bufio.NewWriter(os.Stdout)
 )
 
-var (
-	n int // количество строк
-	t int // количество наборов входных жанных
-)
-
 type StringEntry struct {
-	Odd  []byte // строка
-	Even []byte // строка
-}
-
-func Ozon03() {
-	fmt.Fscan(in, &t)
-	in.ReadByte()
-	for range t { // итерация по наборам
-		fmt.Fscan(in, &n)
-		in.ReadByte()
-		var ss = make([]StringEntry, n)
-		for i := range n {
-			line, _, _ := in.ReadLine()
-			se, so := splitEvenOdd(line)
-			ss[i] = StringEntry{Even: se, Odd: so}
-		}
-		assa(ss, n)
-	}
-	defer out.Flush()
+	Odd, Even []byte
 }
 
 func main() {
-	Ozon03()
+	Ozon03Async()
 }
-func assa(strings []StringEntry, n int) {
-	var count int
+func Ozon03() {
+	var (
+		n int // количество строк
+		t int // количество наборов входных жанных
+	)
+
+	t = fastAtoi()
+	for range t { // итерация по наборам
+		n = fastAtoi()
+		var ss = make([]StringEntry, n, n)
+		for range n {
+			line, _, _ := in.ReadLine()
+			se, so := splitEvenOdd(line)
+			ss = append(ss, StringEntry{Even: se, Odd: so})
+		}
+		out.WriteString(fmt.Sprintf("%d\n", compute(ss)))
+		defer out.Flush()
+	}
+}
+
+func compute(strings []StringEntry) (count int) {
+	var n = len(strings)
 	for i := range n {
 		s := strings[i]
 		for j := i + 1; j < n; j++ {
 			t := strings[j]
-			if bytes.Equal(s.Odd, t.Odd) && len(t.Odd) > 0 {
-				count++
-			} else if bytes.Equal(s.Even, t.Even) && len(t.Even) > 0 {
+			if compare(s, t) {
 				count++
 			}
 		}
 	}
-	out.WriteString(fmt.Sprintf("%d\n", count))
+	return
 }
 
-const (
-	Even = iota
-	Odd
-)
+func compare(s, t StringEntry) bool {
+	if bytes.Equal(s.Odd, t.Odd) && len(t.Odd) > 0 {
+		return true
+	} else if bytes.Equal(s.Even, t.Even) && len(t.Even) > 0 {
+		return true
+	}
+	return false
+}
 
 func splitEvenOdd(data []byte) (even []byte, odd []byte) {
 	for i, b := range data {
@@ -72,4 +71,13 @@ func splitEvenOdd(data []byte) (even []byte, odd []byte) {
 		}
 	}
 	return even, odd
+}
+
+func fastAtoi() (n int) {
+	b, _ := in.ReadBytes('\n')
+	b = bytes.TrimSpace(b)
+	for _, ch := range b {
+		n = n*10 + int(ch-'0')
+	}
+	return
 }
