@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"sync"
 )
 
 var (
@@ -19,24 +20,41 @@ type StringEntry struct {
 func main() {
 	Ozon03Async()
 }
-func Ozon03() {
+func Ozon03Async() {
 	var (
-		n int // количество строк
-		t int // количество наборов входных жанных
+		n  int // количество строк
+		t  int // количество наборов входных жанных
+		wg sync.WaitGroup
 	)
 
 	t = fastAtoi()
-	for range t { // итерация по наборам
+	results := make(chan struct{ n, c int }, t)
+	for q := range t { // итерация по наборам
+
 		n = fastAtoi()
-		var ss = make([]StringEntry, n, n)
-		for range n {
+		var ss = make([]StringEntry, n)
+		for i := range n {
 			line, _, _ := in.ReadLine()
 			se, so := splitEvenOdd(line)
-			ss = append(ss, StringEntry{Even: se, Odd: so})
+			ss[i] = StringEntry{Even: se, Odd: so}
 		}
-		out.WriteString(fmt.Sprintf("%d\n", compute(ss)))
-		defer out.Flush()
+		wg.Add(1)
+		go func(wg *sync.WaitGroup, res chan struct{ n, c int }, ss []StringEntry) {
+			results <- struct{ n, c int }{n: q, c: compute(ss)}
+			wg.Done()
+		}(&wg, results, ss)
 	}
+	wg.Wait()
+	close(results)
+	var aaa = make([]int, t)
+	for r := range results {
+		aaa[r.n] = r.c
+	}
+	for _, w := range aaa {
+		out.WriteString(fmt.Sprintf("%d\n", w))
+	}
+
+	defer out.Flush()
 }
 
 func compute(strings []StringEntry) (count int) {
@@ -54,6 +72,9 @@ func compute(strings []StringEntry) (count int) {
 }
 
 func compare(s, t StringEntry) bool {
+	if len(s.Even) != len(t.Even) && len(s.Odd) != len(t.Odd) {
+		return false
+	}
 	if bytes.Equal(s.Odd, t.Odd) && len(t.Odd) > 0 {
 		return true
 	} else if bytes.Equal(s.Even, t.Even) && len(t.Even) > 0 {

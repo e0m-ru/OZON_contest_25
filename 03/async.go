@@ -41,39 +41,22 @@ func computeAsync(strings []StringEntry) (count int) {
 	return
 }
 
-func Ozon03Async() {
+func Ozon03() {
 	var (
-		n  int // количество строк
-		t  int // количество наборов входных жанных
-		wg sync.WaitGroup
+		n int // количество строк
+		t int // количество наборов входных жанных
 	)
 
 	t = fastAtoi()
-	results := make(chan struct{ n, c int }, t)
-	for q := range t { // итерация по наборам
-
+	for range t { // итерация по наборам
 		n = fastAtoi()
-		var ss = make([]StringEntry, n)
-		for i := range n {
+		var ss = make([]StringEntry, n, n)
+		for range n {
 			line, _, _ := in.ReadLine()
 			se, so := splitEvenOdd(line)
-			ss[i] = StringEntry{Even: se, Odd: so}
+			ss = append(ss, StringEntry{Even: se, Odd: so})
 		}
-		wg.Add(1)
-		go func(wg *sync.WaitGroup, res chan struct{ n, c int }, ss []StringEntry) {
-			results <- struct{ n, c int }{n: q, c: compute(ss)}
-			wg.Done()
-		}(&wg, results, ss)
+		out.WriteString(fmt.Sprintf("%d\n", compute(ss)))
+		defer out.Flush()
 	}
-	wg.Wait()
-	close(results)
-	var aaa = make([]int, t)
-	for r := range results {
-		aaa[r.n] = r.c
-	}
-	for _, w := range aaa {
-		out.WriteString(fmt.Sprintf("%d\n", w))
-	}
-
-	defer out.Flush()
 }
