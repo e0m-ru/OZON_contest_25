@@ -2,7 +2,7 @@ package main
 
 import (
 	"bufio"
-	"bytes"
+	"crypto/sha256"
 	"fmt"
 	"os"
 	"sync"
@@ -14,7 +14,8 @@ var (
 )
 
 type StringEntry struct {
-	Odd, Even []byte
+	Odd, Even         []byte
+	HashOdd, HashEven [32]byte
 }
 
 func main() {
@@ -22,21 +23,21 @@ func main() {
 }
 func Ozon03Async() {
 	var (
-		n  int // количество строк
-		t  int // количество наборов входных жанных
 		wg sync.WaitGroup
+		t  int
+		n  int
 	)
 
 	t = fastAtoi()
+
 	results := make(chan struct{ n, c int }, t)
 	for q := range t { // итерация по наборам
-
 		n = fastAtoi()
-		var ss = make([]StringEntry, n)
+		ss := make([]StringEntry, n)
 		for i := range n {
 			line, _, _ := in.ReadLine()
 			se, so := splitEvenOdd(line)
-			ss[i] = StringEntry{Even: se, Odd: so}
+			ss[i] = StringEntry{HashEven: getHash(se), HashOdd: getHash(so), Even: se, Odd: so}
 		}
 		wg.Add(1)
 		go func(wg *sync.WaitGroup, res chan struct{ n, c int }, ss []StringEntry) {
@@ -46,24 +47,21 @@ func Ozon03Async() {
 	}
 	wg.Wait()
 	close(results)
-	var aaa = make([]int, t)
+	aaa := make([]int, t)
 	for r := range results {
 		aaa[r.n] = r.c
 	}
 	for _, w := range aaa {
 		out.WriteString(fmt.Sprintf("%d\n", w))
 	}
-
 	defer out.Flush()
 }
 
 func compute(strings []StringEntry) (count int) {
-	var n = len(strings)
-	for i := range n {
-		s := strings[i]
-		for j := i + 1; j < n; j++ {
-			t := strings[j]
-			if compare(s, t) {
+	l := len(strings)
+	for i := range l {
+		for j := i + 1; j < l; j++ {
+			if compare(&strings[i], &strings[j]) {
 				count++
 			}
 		}
@@ -71,13 +69,10 @@ func compute(strings []StringEntry) (count int) {
 	return
 }
 
-func compare(s, t StringEntry) bool {
-	if len(s.Even) != len(t.Even) && len(s.Odd) != len(t.Odd) {
-		return false
-	}
-	if bytes.Equal(s.Odd, t.Odd) && len(t.Odd) > 0 {
+func compare(s, t *StringEntry) bool {
+	if (s.HashEven == t.HashEven) && ((len(s.Even) > 0) && (len(t.Even) > 0)) {
 		return true
-	} else if bytes.Equal(s.Even, t.Even) && len(t.Even) > 0 {
+	} else if (s.HashOdd == t.HashOdd) && ((len(s.Odd) > 0) && (len(t.Odd) > 0)) {
 		return true
 	}
 	return false
@@ -86,9 +81,9 @@ func compare(s, t StringEntry) bool {
 func splitEvenOdd(data []byte) (even []byte, odd []byte) {
 	for i, b := range data {
 		if i%2 == 0 {
-			even = append(even, b) // Чётные индексы
+			even = append(even, b)
 		} else {
-			odd = append(odd, b) // Нечётные индексы
+			odd = append(odd, b)
 		}
 	}
 	return even, odd
@@ -96,9 +91,12 @@ func splitEvenOdd(data []byte) (even []byte, odd []byte) {
 
 func fastAtoi() (n int) {
 	b, _ := in.ReadBytes('\n')
-	b = bytes.TrimSpace(b)
-	for _, ch := range b {
+	for _, ch := range b[:len(b)-1] {
 		n = n*10 + int(ch-'0')
 	}
 	return
+}
+
+func getHash(data []byte) [32]byte {
+	return sha256.Sum256(data)
 }

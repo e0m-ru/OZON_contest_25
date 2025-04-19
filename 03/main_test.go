@@ -12,22 +12,20 @@ import (
 	"testing"
 )
 
-func TestOzon04(t *testing.T) {
-	var err error
+func TestOzon03(t *testing.T) {
 	zipRC, _ := zip.OpenReader("even-strings.zip")
 	defer zipRC.Close()
 	for _, n := range zipRC.File { //len(zipRC.File)/2+1
 		name := n.Name
-		var inTestData, ExpTestDtat fs.File
 		var expected []byte
 		if !strings.Contains(name, ".a") {
-			inTestData, err = zipRC.Open(n.Name)
+			inTestData, err := zipRC.Open(n.Name)
 			defer inTestData.Close()
 			if err != nil {
 				t.Error(err)
 			}
 			in = bufio.NewReaderSize(inTestData, 1024)
-			ExpTestDtat, err = zipRC.Open(n.Name + ".a")
+			ExpTestDtat, err := zipRC.Open(n.Name + ".a")
 			if err != nil {
 				t.Error(err)
 			}
@@ -43,7 +41,7 @@ func TestOzon04(t *testing.T) {
 		out = bufio.NewWriter(&xxx)
 
 		t.Run(fmt.Sprintf("Test %v", name), func(t *testing.T) {
-			Ozon03()
+			Ozon03Async()
 			if string(expected) != string(xxx.Bytes()) {
 				t.Errorf("\nEXPECTED:\n%v\nGOT\n%v\n",
 					string(expected), string(xxx.Bytes()))
@@ -83,7 +81,7 @@ func BenchmarkOzon03_b(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				inTestData, _ = zipRC.Open(name)
 				in = bufio.NewReader(inTestData)
-				Ozon03()
+				Ozon03Async()
 			}
 		})
 		defer inTestData.Close()
@@ -97,7 +95,7 @@ func BenchmarkOzon03_a(b *testing.B) {
 	out = bufio.NewWriter(io.Discard)
 	in = bufio.NewReader(strings.NewReader(aaa))
 	for i := 0; i < b.N; i++ {
-		Ozon03()
+		Ozon03Async()
 	}
 
 }

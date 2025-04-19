@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"runtime"
 	"sync"
 )
 
@@ -15,12 +14,12 @@ func computeAsync(strings []StringEntry) (count int) {
 	var mu sync.Mutex
 	tasks := make(chan task)
 
-	for range runtime.NumCPU() {
+	for range n {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			for task := range tasks {
-				if compare(task.s, task.t) {
+				if compare(&task.s, &task.t) {
 					mu.Lock()
 					count++
 					mu.Unlock()
@@ -48,9 +47,13 @@ func Ozon03() {
 	)
 
 	t = fastAtoi()
+	// fmt.Fscan(in, &t)
+
 	for range t { // итерация по наборам
 		n = fastAtoi()
-		var ss = make([]StringEntry, n, n)
+		// fmt.Fscan(in, &n)
+
+		var ss = make([]StringEntry, n)
 		for range n {
 			line, _, _ := in.ReadLine()
 			se, so := splitEvenOdd(line)
