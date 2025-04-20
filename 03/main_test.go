@@ -41,10 +41,10 @@ func TestOzon03(t *testing.T) {
 		out = bufio.NewWriter(&xxx)
 
 		t.Run(fmt.Sprintf("Test %v", name), func(t *testing.T) {
-			Ozon03Async()
-			if string(expected) != string(xxx.Bytes()) {
+			Ozon03(readLinesRaw(in))
+			if string(expected) != xxx.String() {
 				t.Errorf("\nEXPECTED:\n%v\nGOT\n%v\n",
-					string(expected), string(xxx.Bytes()))
+					string(expected), xxx.String())
 			}
 		})
 	}
@@ -81,7 +81,7 @@ func BenchmarkOzon03_b(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				inTestData, _ = zipRC.Open(name)
 				in = bufio.NewReader(inTestData)
-				Ozon03Async()
+				Ozon03(readLinesRaw(in))
 			}
 		})
 		defer inTestData.Close()
@@ -95,7 +95,7 @@ func BenchmarkOzon03_a(b *testing.B) {
 	out = bufio.NewWriter(io.Discard)
 	in = bufio.NewReader(strings.NewReader(aaa))
 	for i := 0; i < b.N; i++ {
-		Ozon03Async()
+		Ozon03(readLinesRaw(in))
 	}
 
 }

@@ -1,34 +1,10 @@
 package main
 
-var aaa = `5
-5
-gxpx
-bx
-yxexk
-y
-axex
-5
-v
-n
-yxp
-nxrx
-lxv
-5
-exg
-g
-c
-pxh
-mxd
-5
-xx
-ux
-nxixl
-bx
-s
-5
-sx
-bxe
-n
-cxqxo
-p
+var aaa = `2
+2
+a
+a
+2
+a
+b
 `

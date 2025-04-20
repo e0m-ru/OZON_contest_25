@@ -2,52 +2,66 @@ package main
 
 import (
 	"bufio"
-	"crypto/sha256"
 	"fmt"
+	"hash/maphash"
 	"os"
 	"sync"
 )
 
 var (
-	in  = bufio.NewReader(os.Stdin)
-	out = bufio.NewWriter(os.Stdout)
+	in   = bufio.NewReader(os.Stdin)
+	out  = bufio.NewWriter(os.Stdout)
+	line []byte
 )
 
 type StringEntry struct {
-	Odd, Even         []byte
 	HashOdd, HashEven [32]byte
 }
 
-func main() {
-	Ozon03Async()
+var (
+	hasherEven maphash.Hash
+	hasherOdd  maphash.Hash
+)
+
+func readLinesRaw(reader *bufio.Reader) [][][]uint64 {
+	line, _ = reader.ReadSlice('\n')
+	t := fastAtoi(line)
+	allTesets := make([][][]uint64, t)
+	for i := range t {
+		line, _ = reader.ReadSlice('\n')
+		n := fastAtoi(line)
+		lines := make([][]uint64, n)
+		for q := range n {
+			line, _ = reader.ReadSlice('\n')
+			lines[q] = computeHashPair(line[:len(line)-1])
+		}
+		allTesets[i] = lines
+	}
+	return allTesets
 }
-func Ozon03Async() {
+
+func main() {
+	seed := maphash.MakeSeed()
+	hasherEven.SetSeed(seed)
+	hasherOdd.SetSeed(seed)
+	Ozon03(readLinesRaw(in))
+}
+
+func Ozon03(data [][][]uint64) {
 	var (
 		wg sync.WaitGroup
-		t  int
-		n  int
 	)
-
-	t = fastAtoi()
-
-	results := make(chan struct{ n, c int }, t)
-	for q := range t { // итерация по наборам
-		n = fastAtoi()
-		ss := make([]StringEntry, n)
-		for i := range n {
-			line, _, _ := in.ReadLine()
-			se, so := splitEvenOdd(line)
-			ss[i] = StringEntry{HashEven: getHash(se), HashOdd: getHash(so), Even: se, Odd: so}
-		}
+	results := make(chan struct{ n, c int }, len(data))
+	for i, q := range data { // итерация по наборам
 		wg.Add(1)
-		go func(wg *sync.WaitGroup, res chan struct{ n, c int }, ss []StringEntry) {
-			results <- struct{ n, c int }{n: q, c: compute(ss)}
+		go func(wg *sync.WaitGroup, res chan struct{ n, c int }, ss [][]uint64) {
+			results <- struct{ n, c int }{n: i, c: compute(ss)}
 			wg.Done()
-		}(&wg, results, ss)
+		}(&wg, results, q)
 	}
 	wg.Wait()
 	close(results)
-	aaa := make([]int, t)
+	aaa := make([]int, len(data))
 	for r := range results {
 		aaa[r.n] = r.c
 	}
@@ -57,11 +71,11 @@ func Ozon03Async() {
 	defer out.Flush()
 }
 
-func compute(strings []StringEntry) (count int) {
+func compute(strings [][]uint64) (count int) {
 	l := len(strings)
 	for i := range l {
 		for j := i + 1; j < l; j++ {
-			if compare(&strings[i], &strings[j]) {
+			if compare(strings[i], strings[j]) {
 				count++
 			}
 		}
@@ -69,34 +83,37 @@ func compute(strings []StringEntry) (count int) {
 	return
 }
 
-func compare(s, t *StringEntry) bool {
-	if (s.HashEven == t.HashEven) && ((len(s.Even) > 0) && (len(t.Even) > 0)) {
-		return true
-	} else if (s.HashOdd == t.HashOdd) && ((len(s.Odd) > 0) && (len(t.Odd) > 0)) {
+func compare(a, b []uint64) bool {
+
+	if ((a[0] == b[0]) && (b[0] != 0)) || ((a[1] == b[1]) && (b[1] != 0)) {
 		return true
 	}
+
 	return false
 }
 
-func splitEvenOdd(data []byte) (even []byte, odd []byte) {
+func computeHashPair(data []byte) (res []uint64) {
+	hasherEven.Reset()
+	hasherOdd.Reset()
+	var f2 = false
 	for i, b := range data {
 		if i%2 == 0 {
-			even = append(even, b)
+			hasherEven.WriteByte(b)
 		} else {
-			odd = append(odd, b)
+			hasherOdd.WriteByte(b)
+			f2 = true
 		}
 	}
-	return even, odd
+	if f2 {
+		return []uint64{hasherEven.Sum64(), hasherOdd.Sum64()}
+	} else {
+		return []uint64{hasherEven.Sum64(), 0}
+	}
 }
 
-func fastAtoi() (n int) {
-	b, _ := in.ReadBytes('\n')
+func fastAtoi(b []byte) (n int) {
 	for _, ch := range b[:len(b)-1] {
 		n = n*10 + int(ch-'0')
 	}
 	return
-}
-
-func getHash(data []byte) [32]byte {
-	return sha256.Sum256(data)
 }
